@@ -12,6 +12,8 @@
     "scrape": "tsx --env-file-if-exists=.env.local scripts/scrape.ts"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "@vercel/blob": "^2.4.0",
     "cheerio": "^1.2.0",
     "next": "16.2.6",

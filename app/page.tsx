@@ -1,5 +1,5 @@
 import { getMenus } from '@/lib/menu';
-import { RestaurantCard } from '@/components/RestaurantCard';
+import { VotingApp } from '@/components/VotingApp';
 import { MatrixRain } from '@/components/MatrixRain';
 import { MatrixFooter } from '@/components/MatrixFooter';
 
@@ -40,11 +40,7 @@ export default async function HomePage() {
         <div className="page-date">&gt;&gt;&gt; {date.toUpperCase()}</div>
       </header>
 
-      <main className="grid">
-        {restaurants.map((r) => (
-          <RestaurantCard key={r.name} restaurant={r} />
-        ))}
-      </main>
+      <VotingApp restaurants={restaurants} />
 
         <MatrixFooter />
       </div>

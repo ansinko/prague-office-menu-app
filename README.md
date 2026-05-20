@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Menu Picker
 
-## Getting Started
+Stránka s dnešným poludným menu z troch reštaurácií v okolí: Krušovická Chalupa, Restaurant Kandelábr a U Smrtáka. Menu sa scrapuje raz denne cez GitHub Action a ukladá do Vercel Blobu; Next.js appka číta JSON a renderuje ho.
 
-First, run the development server:
+🌐 https://menu-picker-three.vercel.app
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architektúra
+
+```
+GitHub Action (cron 10:30 Po-Pia)
+  → npm run scrape
+  → scrapne 3 weby
+  → uloží menu/latest.json + menu/YYYY-MM-DD.json do Vercel Blobu
+
+Next.js app
+  → fetchuje menu/latest.json (public URL)
+  → renderuje (revalidate 5 min)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Lokálny vývoj
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+vercel env pull .env.local --yes   # stiahne BLOB_READ_WRITE_TOKEN
+npm run dev                         # http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripty
 
-## Learn More
+| Script | Čo robí |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm run build` | Produkčný build |
+| `npm run scrape` | Spustí scraping a uploadne JSON do Blobu |
+| `npm test` | Vitest run |
 
-To learn more about Next.js, take a look at the following resources:
+## Manuálne spustenie scrape-u
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Lokálne** (prepíše Blob okamžite):
+```bash
+npm run scrape
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Cez GitHub Action** (beží z GitHub IP, simuluje reálny cron):
+GitHub repo → **Actions** → „Scrape menus" → **Run workflow**.
 
-## Deploy on Vercel
+## Troubleshooting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Stránka ukazuje staré menu**
+Appka kešuje JSON 5 min (`revalidate = 300` v `app/page.tsx`). Počkaj alebo cache-bust: `?cb=<timestamp>`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Reštaurácia má „fetch failed" / „HTTP 4xx"**
+Scrape pre konkrétnu reštauráciu zlyhal — pravdepodobne dočasný problém na ich strane alebo blokácia IP. Skús znova `npm run scrape`. Ak to zlyháva opakovane, pozri logy v Actions tabe a uprav príslušný scraper v `lib/scrapers/`.
+
+**`Vercel Blob: No blob credentials found`**
+`.env.local` nemá `BLOB_READ_WRITE_TOKEN`. Spusti `vercel env pull .env.local --yes`. Ak je hodnota prázdna, na Verceli chýba premenná v *Development* env — pridaj cez dashboard alebo `vercel env add BLOB_READ_WRITE_TOKEN development`.
+
+**Cron na GitHube nepustil scrape**
+GitHub Actions cron beží v UTC a v repách s nízkou aktivitou ho GitHub niekedy oneskorí o pár minút (občas aj viac). Workflow vždy vieš spustiť manuálne (Actions → Run workflow).
+
+**Pridanie novej reštaurácie**
+1. Nový súbor v `lib/scrapers/` podľa vzoru existujúcich.
+2. Pridať volanie do `Promise.all(...)` v `scripts/scrape.ts`.
+3. Nasadiť + spustiť scrape.
+
+## Stack
+
+Next.js 16 (App Router), React 19, Tailwind 4, Vercel Blob, GitHub Actions, TypeScript, Vitest.

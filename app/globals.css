@@ -38,7 +38,7 @@ html, body {
 }
 
 .page {
-  max-width: 1240px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 56px 28px 80px;
   position: relative;
@@ -149,11 +149,13 @@ html, body {
 /* ── Grid ── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--gap-grid);
-  align-items: start;
+  align-items: stretch;
+  width: 100%;
 }
-@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
 
 /* ── Card ── */
 .card {
@@ -165,6 +167,8 @@ html, body {
   box-shadow: inset 0 0 24px rgba(0,255,102,0.04), 0 0 1px rgba(0,255,102,0.3);
   transition: border-color .2s ease, box-shadow .2s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .card:hover {
   border-color: var(--accent);
@@ -185,10 +189,11 @@ html, body {
 
 .card-head-row {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+  min-height: 46px;
 }
 .card-name {
   font-size: 17px;
@@ -231,6 +236,7 @@ html, body {
   margin-bottom: 18px;
   position: relative;
   overflow: hidden;
+  min-height: 76px;
 }
 .soup-stripe {
   position: absolute;
@@ -454,8 +460,8 @@ html, body {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: auto;
+  padding-top: 14px;
   border-top: 1px dashed rgba(0, 255, 102, 0.25);
 }
 .card-foot-votes {

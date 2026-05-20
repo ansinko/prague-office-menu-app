@@ -1,0 +1,89 @@
+{
+  "name": "U Šotoňů — dnešné menu",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "U Šotoňů — dnešné menu",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "image",
+              "fieldType": "file",
+              "acceptFileTypes": "image/*",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode"
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 300],
+      "id": "a1f3c2d4-e5b6-4780-9abc-def012345678",
+      "name": "Form",
+      "webhookId": "b2e4d3c5-f6a7-5891-0bcd-ef1234567890"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=GEMINI_API_KEY",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ ({ contents:[{ parts:[{ text:'Z obrázku denného menu vytiahni dnešné poludné jedlá. Vráť presný JSON s týmito kľúčmi: soup (string alebo null): názov polievky; extra (string alebo null): šalátik, dezert alebo iná extra položka ak je; items: pole jedál, každé s name a price. Ceny formátuj ako 180 Kč. Text ponechaj v češtine. Žiadne komentáre, len čistý JSON.' },{ inlineData:{ mimeType:$binary.image.mimeType, data:$binary.image.data } }] }], generationConfig:{ responseMimeType:'application/json', responseSchema:{ type:'object', properties:{ soup:{ type:'string', nullable:true }, extra:{ type:'string', nullable:true }, items:{ type:'array', items:{ type:'object', properties:{ name:{ type:'string' }, price:{ type:'string' } }, required:['name','price'] } } }, required:['soup','items'] } } }) }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 300],
+      "id": "c3e5d4f6-a7b8-6902-1cde-f23456789012",
+      "name": "Gemini API"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nreturn [{ json: JSON.parse(raw) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [560, 300],
+      "id": "d4f6e5a7-b8c9-7013-2def-034567890123",
+      "name": "Parsuj odpoveď"
+    }
+  ],
+  "connections": {
+    "Form": {
+      "main": [
+        [
+          {
+            "node": "Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Parsuj odpoveď",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

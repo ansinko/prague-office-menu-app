@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - img [ref=e6]
+      - heading "Expense Tracker" [level=1] [ref=e9]
+      - paragraph [ref=e10]: Prihláste sa pre pokračovanie
+    - generic [ref=e11]:
+      - textbox "Email" [ref=e12]
+      - textbox "Heslo" [ref=e13]
+      - button "Prihlásiť sa" [ref=e14]
+    - generic [ref=e19]: alebo
+    - button "Pokračovať cez Google" [ref=e20]:
+      - img [ref=e21]
+      - text: Pokračovať cez Google
+    - paragraph [ref=e26]:
+      - text: Nemáte účet?
+      - button "Registrovať sa" [ref=e27]
+  - alert [ref=e28]

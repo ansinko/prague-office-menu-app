@@ -67,7 +67,7 @@ export function parseUsmrtaka(html: string): ParseResult {
 }
 
 export async function scrapeUsmrtaka(): Promise<Restaurant> {
-  const result: Restaurant = { name: NAME, url: URL, soup: null, items: [], error: null };
+  const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
   const day = new Date().getDay();
 
   if (day === 0 || day === 6) {

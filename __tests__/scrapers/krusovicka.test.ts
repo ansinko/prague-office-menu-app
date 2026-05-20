@@ -10,6 +10,7 @@ describe('parseKrusovicka', () => {
     const result = parseKrusovicka(fixture, 3); // 3 = Středa
     expect(result.error).toBeNull();
     expect(result.soup).toBe('Chalupářská');
+    expect(result.extra).toBe('Zeleninový salátek');
     expect(result.items).toHaveLength(2);
     expect(result.items[0]).toEqual({ name: 'Kuřecí závitek plněný šunkou', price: '168 Kč' });
     expect(result.items[1]).toEqual({ name: 'Holandský řízek', price: '179 Kč' });

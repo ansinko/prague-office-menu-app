@@ -46,9 +46,20 @@ export function VotingApp({ restaurants }: { restaurants: Restaurant[] }) {
     cast(me, current === slug ? null : slug);
   };
 
+  const handleSetMe = async (next: string | null) => {
+    const previousVote = me ? votes[me] : undefined;
+    if (me && previousVote) {
+      await cast(me, null);
+    }
+    setMe(next);
+    if (next && previousVote) {
+      await cast(next, previousVote);
+    }
+  };
+
   return (
     <>
-      {ready && <IdentityBar me={me} onSet={setMe} />}
+      {ready && <IdentityBar me={me} onSet={handleSetMe} />}
       <PickBanner leaders={leaderNames} count={leaderCount} total={total} />
       <main className="grid">
         {restaurants.map((r, i) => {

@@ -11,9 +11,9 @@ export async function getMenus(): Promise<Restaurant[]> {
     return data.restaurants;
   } catch {
     return [
-      { name: 'Krušovická Chalupa', url: 'https://krusovickachalupa.cz/menu/', soup: null, items: [], error: 'Menu se nepodařilo načíst' },
-      { name: 'Restaurant Kandelábr', url: 'https://www.restaurantkandelabr.cz/poledni-menu/', soup: null, items: [], error: 'Menu se nepodařilo načíst' },
-      { name: 'U Smrtáka', url: 'https://usmrtaka.cz/jidelni-listek/', soup: null, items: [], error: 'Menu se nepodařilo načíst' },
+      { name: 'Krušovická Chalupa', url: 'https://krusovickachalupa.cz/menu/', soup: null, extra: null, items: [], error: 'Menu se nepodařilo načíst' },
+      { name: 'Restaurant Kandelábr', url: 'https://www.restaurantkandelabr.cz/poledni-menu/', soup: null, extra: null, items: [], error: 'Menu se nepodařilo načíst' },
+      { name: 'U Smrtáka', url: 'https://usmrtaka.cz/jidelni-listek/', soup: null, extra: null, items: [], error: 'Menu se nepodařilo načíst' },
     ];
   }
 }

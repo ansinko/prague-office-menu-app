@@ -549,3 +549,40 @@ html, body {
   text-transform: uppercase;
   text-shadow: 0 0 6px rgba(0, 255, 102, 0.6);
 }
+
+/* ─── extra (dessert / side under soup) ─── */
+.extra {
+  display: block;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  padding: 8px 14px 11px 16px;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.extra-stripe {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: #00d4ff;
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.5);
+}
+.extra-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #00d4ff;
+  margin-bottom: 4px;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+}
+.extra-text {
+  display: block;
+  font-size: 13px;
+  color: #cdf2ff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.25);
+}

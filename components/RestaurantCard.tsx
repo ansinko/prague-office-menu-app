@@ -71,6 +71,14 @@ export function RestaurantCard({
         </div>
       )}
 
+      {r.extra && (
+        <div className="extra">
+          <span className="extra-stripe" aria-hidden="true" />
+          <span className="extra-label">&gt; EXTRA</span>
+          <span className="extra-text">{r.extra}</span>
+        </div>
+      )}
+
       {r.items.length > 0 ? (
         <div className="dishes">
           {r.items.map((item, i) => (

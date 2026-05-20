@@ -18,6 +18,7 @@ export function parseKrusovicka(html: string, dayIndex: number): ParseResult & {
   }
 
   let soup: string | null = null;
+  let extra: string | null = null;
   const items: MenuItem[] = [];
   let tr = todayH6.closest('tr').next('tr');
 
@@ -36,6 +37,8 @@ export function parseKrusovicka(html: string, dayIndex: number): ParseResult & {
 
     if (!soup && /^\d+[.,]\d+l$/i.test(col1) && col2) {
       soup = col2;
+    } else if (soup && !extra && !col0 && !col1 && col2 && !/Kč/i.test(col3)) {
+      extra = col2;
     } else if (/^Menu\s*\d/i.test(col0) && col2) {
       const price = col3.match(/(\d+)\s*Kč/i);
       if (price) items.push({ name: col2, price: price[1] + ' Kč' });
@@ -44,11 +47,11 @@ export function parseKrusovicka(html: string, dayIndex: number): ParseResult & {
     tr = tr.next('tr');
   }
 
-  return { soup, items, error: null };
+  return { soup, extra, items, error: null };
 }
 
 export async function scrapeKrusovicka(): Promise<Restaurant> {
-  const result: Restaurant = { name: NAME, url: URL, soup: null, items: [], error: null };
+  const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
   const dayIndex = new Date().getDay();
 
   if (dayIndex === 0 || dayIndex === 6) {
@@ -58,8 +61,8 @@ export async function scrapeKrusovicka(): Promise<Restaurant> {
   try {
     const res = await fetch(URL, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { soup, items, error } = parseKrusovicka(await res.text(), dayIndex);
-    return { ...result, soup, items, error };
+    const { soup, extra, items, error } = parseKrusovicka(await res.text(), dayIndex);
+    return { ...result, soup, extra: extra ?? null, items, error };
   } catch (e) {
     return { ...result, error: e instanceof Error ? e.message : 'Chyba scrapeingu' };
   }

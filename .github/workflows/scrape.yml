@@ -1,0 +1,23 @@
+name: Scrape menus
+
+on:
+  schedule:
+    # 10:30 Europe/Prague Mon-Fri.
+    # GitHub cron is UTC. 08:30 UTC = 10:30 CEST (summer) / 09:30 CET (winter).
+    - cron: '30 8 * * 1-5'
+  workflow_dispatch: {}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run scrape
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}

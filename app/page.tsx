@@ -3,7 +3,7 @@ import { RestaurantCard } from '@/components/RestaurantCard';
 import { MatrixRain } from '@/components/MatrixRain';
 import { MatrixFooter } from '@/components/MatrixFooter';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 const WEEKDAYS = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
 const MONTHS = ['ledna', 'února', 'března', 'dubna', 'května', 'června', 'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];

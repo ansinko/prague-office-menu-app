@@ -3,6 +3,8 @@ import type { MenuItem, ParseResult, Restaurant } from './types';
 const NAME = 'Restaurant Kandelábr';
 const URL = 'https://www.restaurantkandelabr.cz/poledni-menu/';
 const ENTITY_ID_FALLBACK = '16506739';
+const UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 export function parseZomato(html: string): ParseResult {
   const todayMatch = html.match(
@@ -46,7 +48,7 @@ export function parseZomato(html: string): ParseResult {
 
 async function findEntityId(): Promise<string> {
   try {
-    const res = await fetch(URL, { cache: 'no-store' });
+    const res = await fetch(URL, { cache: 'no-store', headers: { 'User-Agent': UA } });
     const html = await res.text();
     return html.match(/iframe[^>]*src="[^"]*zomato\.com[^"]*entity_id=(\d+)/)?.[1]
       ?? ENTITY_ID_FALLBACK;
@@ -67,7 +69,7 @@ export async function scrapeKandelabr(): Promise<Restaurant> {
     const entityId = await findEntityId();
     const res = await fetch(
       `https://www.zomato.com/cs/widgets/daily_menu.php?entity_id=${entityId}`,
-      { headers: { Referer: URL }, cache: 'no-store' },
+      { headers: { Referer: URL, 'User-Agent': UA }, cache: 'no-store' },
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const { soup, items } = parseZomato(await res.text());

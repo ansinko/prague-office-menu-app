@@ -1,4 +1,5 @@
 import type { Restaurant } from './scrapers/types';
+import { getOffice } from './offices';
 
 const LATEST_URL =
   'https://k4iu9zkxljm5kpot.public.blob.vercel-storage.com/menu/latest.json';
@@ -14,7 +15,7 @@ const USOTONU_FALLBACK: Restaurant = {
   error: 'Menu nebylo nahráno',
 };
 
-export async function getMenus(): Promise<Restaurant[]> {
+async function getAllMenus(): Promise<Restaurant[]> {
   const [mainResult, usotonuResult] = await Promise.allSettled([
     fetch(LATEST_URL, { cache: 'no-store' }).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -47,4 +48,19 @@ export async function getMenus(): Promise<Restaurant[]> {
       : USOTONU_FALLBACK;
 
   return [...mainRestaurants, usotonu];
+}
+
+/**
+ * Restaurants for a given office, ordered and filtered by its config.
+ * Currently all real menu data belongs to Mo-cha; the office config maps
+ * which restaurants belong where, so adding an office is config-only.
+ */
+export async function getMenus(officeId: string): Promise<Restaurant[]> {
+  const office = getOffice(officeId);
+  if (!office) return [];
+  const all = await getAllMenus();
+  const byName = new Map(all.map((r) => [r.name, r]));
+  return office.restaurants
+    .map((or) => byName.get(or.name))
+    .filter((r): r is Restaurant => !!r);
 }

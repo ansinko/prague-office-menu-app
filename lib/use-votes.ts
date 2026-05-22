@@ -6,7 +6,7 @@ export type VoteMap = Record<string, string>;
 
 const POLL_MS = 10_000;
 
-export function useVotes() {
+export function useVotes(officeId: string) {
   const [votes, setVotes] = useState<VoteMap>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,10 @@ export function useVotes() {
     const ac = new AbortController();
     abortRef.current = ac;
     try {
-      const res = await fetch('/api/votes', { signal: ac.signal, cache: 'no-store' });
+      const res = await fetch(`/api/votes?office=${encodeURIComponent(officeId)}`, {
+        signal: ac.signal,
+        cache: 'no-store',
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { votes: next } = (await res.json()) as { votes: VoteMap };
       setVotes(next);
@@ -28,7 +31,7 @@ export function useVotes() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [officeId]);
 
   useEffect(() => {
     fetchVotes();
@@ -73,7 +76,7 @@ export function useVotes() {
         const res = await fetch('/api/votes', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ name, restaurant }),
+          body: JSON.stringify({ name, restaurant, officeId }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { votes: server } = (await res.json()) as { votes: VoteMap };
@@ -84,7 +87,7 @@ export function useVotes() {
         setError((e as Error).message);
       }
     },
-    [votes],
+    [votes, officeId],
   );
 
   return { votes, cast, loading, error, refresh: fetchVotes };

@@ -5,14 +5,18 @@ export const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-export function todayKey(): string {
+export function pragueDateStamp(): string {
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Prague',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   });
-  return `votes:${fmt.format(new Date())}`;
+  return fmt.format(new Date());
+}
+
+export function todayKey(officeId: string): string {
+  return `votes:${officeId}:${pragueDateStamp()}`;
 }
 
 export function secondsUntilPragueMidnight(): number {

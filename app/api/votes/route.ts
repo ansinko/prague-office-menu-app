@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { redis, secondsUntilPragueMidnight, todayKey } from '@/lib/redis';
 import { slugify } from '@/lib/slug';
-import { getMenus } from '@/lib/menu';
+import { getOffice } from '@/lib/offices';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,11 +25,15 @@ function normaliseName(raw: unknown): string | null {
   return t;
 }
 
-export async function GET() {
-  const key = todayKey();
+export async function GET(req: NextRequest) {
+  const officeId = req.nextUrl.searchParams.get('office');
+  if (!officeId || !getOffice(officeId)) {
+    return NextResponse.json({ error: 'Unknown office' }, { status: 400 });
+  }
+  const key = todayKey(officeId);
   const data = (await redis.hgetall<Record<string, string>>(key)) ?? {};
   return NextResponse.json(
-    { date: key.slice('votes:'.length), votes: data },
+    { votes: data },
     { headers: { 'cache-control': 'no-store' } },
   );
 }
@@ -47,7 +51,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const parsed = body as { name?: unknown; restaurant?: unknown };
+  const parsed = body as { name?: unknown; restaurant?: unknown; officeId?: unknown };
+
+  const office = typeof parsed.officeId === 'string' ? getOffice(parsed.officeId) : undefined;
+  if (!office) return NextResponse.json({ error: 'Unknown office' }, { status: 400 });
+
   const name = normaliseName(parsed.name);
   if (!name) return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
 
@@ -56,7 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid restaurant' }, { status: 400 });
   }
 
-  const key = todayKey();
+  const key = todayKey(office.id);
 
   if (restaurantRaw === null || restaurantRaw === '') {
     await redis.hdel(key, name);
@@ -64,8 +72,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ votes: data });
   }
 
-  const restaurants = await getMenus();
-  const validSlugs = new Set(restaurants.map((r) => slugify(r.name)));
+  const validSlugs = new Set(office.restaurants.map((r) => slugify(r.name)));
   if (!validSlugs.has(restaurantRaw)) {
     return NextResponse.json({ error: 'Unknown restaurant' }, { status: 400 });
   }

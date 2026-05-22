@@ -5,22 +5,33 @@ import { MatrixFooter } from '@/components/MatrixFooter';
 
 export const revalidate = 300;
 
-const WEEKDAYS = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
-const MONTHS = ['ledna', 'února', 'března', 'dubna', 'května', 'června', 'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
 
-function czechDate(d: Date) {
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+function pragueDate(d: Date) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('cs-CZ', {
+      timeZone: 'Europe/Prague',
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    }).formatToParts(d).map(p => [p.type, p.value])
+  );
+  return `${parts.weekday} ${parts.day}. ${parts.month} ${parts.year}`;
 }
-function isoDate(d: Date) {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+function pragueIsoDate(d: Date) {
+  const s = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(d);
+  return s; // returns "YYYY-MM-DD"
+}
+function pragueHour(d: Date) {
+  const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', hour: 'numeric', hour12: false });
+  return Number(fmt.formatToParts(d).find(p => p.type === 'hour')?.value ?? 0);
 }
 
 export default async function HomePage() {
-  const restaurants = await getMenus();
   const now = new Date();
-  const date = czechDate(now);
-  const iso = isoDate(now);
+  const date = pragueDate(now);
+  const iso = pragueIsoDate(now);
+  const hour = pragueHour(now);
+  const menuReady = hour >= 9;
+
+  const restaurants = menuReady ? await getMenus() : [];
 
   return (
     <>
@@ -40,7 +51,13 @@ export default async function HomePage() {
         <div className="page-date">&gt;&gt;&gt; {date.toUpperCase()}</div>
       </header>
 
-      <VotingApp restaurants={restaurants} />
+      {menuReady ? (
+        <VotingApp restaurants={restaurants} />
+      ) : (
+        <p style={{ textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 14, padding: '48px 0', letterSpacing: '0.08em' }}>
+          &gt; MENU SE ZOBRAZÍ OD 09:00 _
+        </p>
+      )}
 
         <MatrixFooter />
       </div>

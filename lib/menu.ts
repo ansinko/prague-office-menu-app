@@ -16,7 +16,7 @@ const USOTONU_FALLBACK: Restaurant = {
 
 export async function getMenus(): Promise<Restaurant[]> {
   const [mainResult, usotonuResult] = await Promise.allSettled([
-    fetch(LATEST_URL, { next: { revalidate: 300 } }).then((r) => {
+    fetch(LATEST_URL, { cache: 'no-store' }).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json() as Promise<{ restaurants: Restaurant[] }>;
     }),

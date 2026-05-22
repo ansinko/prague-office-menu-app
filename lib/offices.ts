@@ -25,7 +25,7 @@ export type PublicOffice = Omit<Office, 'passwordHash'>;
 const OFFICES: Office[] = [
   {
     id: 'mocha',
-    name: 'Mo-cha',
+    name: 'innovis',
     address: 'Praha',
     coords: [50.05948178104082, 14.429651742327714],
     passwordHash:

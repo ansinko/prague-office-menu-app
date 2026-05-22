@@ -29,6 +29,7 @@ export function PragueMap({
   });
   const onClickRef = useRef(onOfficeClick);
   useEffect(() => { onClickRef.current = onOfficeClick; }, [onOfficeClick]);
+  const overviewRef = useRef<L.LatLngBounds | null>(null);
 
   // ── Init map once ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -81,16 +82,43 @@ export function PragueMap({
 
     const allPoints: [number, number][] = [];
 
+    const officePoints = (o: PublicOffice): [number, number][] => [
+      o.coords,
+      ...o.restaurants.map((r) => r.coords),
+    ];
+
     // JS-driven hover reveal: toggle `is-active` on every element tagged with
     // the hovered office id (rest pins + connection paths). Scales to N offices
-    // without per-office CSS.
-    const setActive = (officeId: string, on: boolean) => {
+    // without per-office CSS. Hovering also flies the map to frame that office
+    // and its restaurants; leaving returns to the overview.
+    const setActive = (office: PublicOffice, on: boolean) => {
       root
-        .querySelectorAll(`[data-office-id="${CSS.escape(officeId)}"]`)
+        .querySelectorAll(`[data-office-id="${CSS.escape(office.id)}"]`)
         .forEach((n) => n.classList.toggle('is-active', on));
-      if (on) root.setAttribute('data-hover-office', officeId);
-      else if (root.getAttribute('data-hover-office') === officeId)
+
+      if (on) {
+        root.setAttribute('data-hover-office', office.id);
+        try {
+          map.flyToBounds(L.latLngBounds(officePoints(office)), {
+            paddingTopLeft: [60, 220],
+            paddingBottomRight: [60, 160],
+            maxZoom: 16.5,
+            duration: 0.7,
+          });
+        } catch {
+          /* noop */
+        }
+      } else if (root.getAttribute('data-hover-office') === office.id) {
         root.removeAttribute('data-hover-office');
+        if (overviewRef.current) {
+          map.flyToBounds(overviewRef.current, {
+            paddingTopLeft: [40, 200],
+            paddingBottomRight: [40, 120],
+            maxZoom: 16,
+            duration: 0.7,
+          });
+        }
+      }
     };
 
     for (const office of offices) {
@@ -126,10 +154,10 @@ export function PragueMap({
             onClickRef.current?.(office);
           }
         });
-        el.addEventListener('mouseenter', () => setActive(office.id, true));
-        el.addEventListener('mouseleave', () => setActive(office.id, false));
-        el.addEventListener('focus', () => setActive(office.id, true), true);
-        el.addEventListener('blur', () => setActive(office.id, false), true);
+        el.addEventListener('mouseenter', () => setActive(office, true));
+        el.addEventListener('mouseleave', () => setActive(office, false));
+        el.addEventListener('focus', () => setActive(office, true), true);
+        el.addEventListener('blur', () => setActive(office, false), true);
       };
       if (marker.getElement()) wireDom();
       else marker.on('add', wireDom);
@@ -171,6 +199,8 @@ export function PragueMap({
         layersRef.current.lines.push(line);
       });
     }
+
+    overviewRef.current = allPoints.length > 0 ? L.latLngBounds(allPoints) : null;
 
     if (allPoints.length > 1) {
       try {

@@ -37,6 +37,19 @@ const OFFICES: Office[] = [
       { name: 'U Sotonů', coords: [50.059224886342655, 14.430785949807154] },
     ],
   },
+  {
+    id: 'viagem',
+    name: 'Viagem',
+    address: 'Praha — Karlín',
+    coords: [50.093932220982595, 14.450909683640813],
+    passwordHash:
+      '79d94e3f37234c17ec3db2f9651cf9814bc36bc35cc4688a6c78d8c6b0b0fa62',
+    restaurants: [
+      { name: 'Jídlovice Karlín', coords: [50.094722055574096, 14.448890245117077] },
+      { name: 'Dvorek', coords: [50.09184081762309, 14.450830583575792] },
+      { name: 'Cafe Frida', coords: [50.0921941015992, 14.446565997068415] },
+    ],
+  },
 ];
 
 function toPublic(o: Office): PublicOffice {

@@ -39,7 +39,9 @@ export default async function OfficePage({
   const now = new Date();
   const date = pragueDate(now);
   const iso = pragueIsoDate(now);
-  const menuReady = pragueHour(now) >= 9;
+  // MENU_DATE_OVERRIDE (dev-only opt-in via .env.local) implies we're previewing
+  // a specific day's menu, so bypass the 09:00 gate as well.
+  const menuReady = !!process.env.MENU_DATE_OVERRIDE || pragueHour(now) >= 9;
 
   const restaurants = menuReady ? await getMenus(office.id) : [];
 

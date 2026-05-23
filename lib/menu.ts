@@ -1,10 +1,19 @@
 import type { Restaurant } from './scrapers/types';
 import { getOffice } from './offices';
 
-const LATEST_URL =
-  'https://k4iu9zkxljm5kpot.public.blob.vercel-storage.com/menu/latest.json';
-const USOTONU_URL =
-  'https://k4iu9zkxljm5kpot.public.blob.vercel-storage.com/usotonu.json';
+const BLOB_BASE =
+  'https://k4iu9zkxljm5kpot.public.blob.vercel-storage.com';
+
+/** Dev override: set MENU_DATE_OVERRIDE=YYYY-MM-DD in .env.local to fetch that
+ *  day's archived menu file instead of `latest.json`. Handy for previewing the
+ *  UI against real data outside scraping hours. */
+function mainMenuUrl(): string {
+  const override = process.env.MENU_DATE_OVERRIDE?.trim();
+  return override
+    ? `${BLOB_BASE}/menu/${override}.json`
+    : `${BLOB_BASE}/menu/latest.json`;
+}
+const USOTONU_URL = `${BLOB_BASE}/usotonu.json`;
 
 const USOTONU_FALLBACK: Restaurant = {
   name: 'U Sotonů',
@@ -17,7 +26,7 @@ const USOTONU_FALLBACK: Restaurant = {
 
 async function getAllMenus(): Promise<Restaurant[]> {
   const [mainResult, usotonuResult] = await Promise.allSettled([
-    fetch(LATEST_URL, { cache: 'no-store' }).then((r) => {
+    fetch(mainMenuUrl(), { cache: 'no-store' }).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json() as Promise<{ restaurants: Restaurant[] }>;
     }),

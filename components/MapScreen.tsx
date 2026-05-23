@@ -42,7 +42,12 @@ export function MapScreen({
         </div>
       </div>
 
-      <PragueMap offices={offices} unlockedIds={unlockedIds} onOfficeClick={onOfficeClick} />
+      <PragueMap
+        offices={offices}
+        unlockedIds={unlockedIds}
+        onOfficeClick={onOfficeClick}
+        revealedOfficeId={pwdFor?.id ?? null}
+      />
 
       <div className="map-overlay map-overlay--bottom">
         <div className="map-legend">

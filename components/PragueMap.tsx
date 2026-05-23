@@ -15,10 +15,14 @@ export function PragueMap({
   offices,
   unlockedIds,
   onOfficeClick,
+  revealedOfficeId,
 }: {
   offices: PublicOffice[];
   unlockedIds: string[];
   onOfficeClick: (office: PublicOffice) => void;
+  /** Programmatic reveal (independent of hover) — e.g. while the password sheet
+   *  is open for this office on mobile, where hover doesn't exist. */
+  revealedOfficeId?: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -188,6 +192,22 @@ export function PragueMap({
       map.flyTo(allPoints[0], 15.5, { duration: 0.6 });
     }
   }, [offices, unlockedIds]);
+
+  // Programmatic reveal — used while the password sheet is open on mobile,
+  // where hover doesn't exist. Uses a separate `.is-revealed` class so the
+  // hover handler's `.is-active` toggling (which synthesized mouseleave on
+  // touch would otherwise clear right after the tap) can't fight with it.
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root || !revealedOfficeId) return;
+    const targets = Array.from(
+      root.querySelectorAll(`[data-office-id="${CSS.escape(revealedOfficeId)}"]`),
+    );
+    targets.forEach((n) => n.classList.add('is-revealed'));
+    return () => {
+      targets.forEach((n) => n.classList.remove('is-revealed'));
+    };
+  }, [revealedOfficeId]);
 
   return <div ref={containerRef} className="map-canvas" />;
 }

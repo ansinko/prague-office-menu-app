@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import type { Restaurant } from '@/lib/scrapers/types';
-import { slugify } from '@/lib/slug';
 import { useIdentity } from '@/lib/use-identity';
 import { useVotes } from '@/lib/use-votes';
 import { IdentityBar } from './IdentityBar';
@@ -29,22 +28,21 @@ export function VotingApp({
     return m;
   }, [votes]);
 
-  const total = Object.keys(votes).length;
-  const slugByCard = useMemo(
-    () => restaurants.map((r) => slugify(r.name)),
-    [restaurants],
-  );
+  const { leaderCount, leaderSlugs, leaderNames } = useMemo(() => {
+    let max = 0;
+    for (const voters of tally.values()) {
+      if (voters.length > max) max = voters.length;
+    }
+    if (max === 0) return { leaderCount: 0, leaderSlugs: new Set<string>(), leaderNames: [] as string[] };
+    const slugs = new Set<string>();
+    for (const [slug, voters] of tally.entries()) {
+      if (voters.length === max) slugs.add(slug);
+    }
+    const names = restaurants.filter((r) => slugs.has(r.slug)).map((r) => r.name);
+    return { leaderCount: max, leaderSlugs: slugs, leaderNames: names };
+  }, [tally, restaurants]);
 
-  const leaderCount = Math.max(0, ...Array.from(tally.values(), (v) => v.length));
-  const leaderSlugs =
-    leaderCount > 0
-      ? Array.from(tally.entries())
-          .filter(([, voters]) => voters.length === leaderCount)
-          .map(([slug]) => slug)
-      : [];
-  const leaderNames = leaderSlugs
-    .map((s) => restaurants.find((r, i) => slugByCard[i] === s)?.name)
-    .filter((n): n is string => !!n);
+  const total = Object.keys(votes).length;
 
   const onToggle = (slug: string) => {
     if (!me) return;
@@ -63,28 +61,28 @@ export function VotingApp({
     }
   };
 
+  const isTie = leaderSlugs.size > 1;
+
   return (
     <>
       {ready && <IdentityBar me={me} onSet={handleSetMe} />}
       <PickBanner leaders={leaderNames} count={leaderCount} total={total} />
       <main className="grid">
-        {restaurants.map((r, i) => {
-          const slug = slugByCard[i];
-          const voters = tally.get(slug) ?? [];
-          const picked = !!me && votes[me] === slug;
-          const isLeader = leaderCount > 0 && leaderSlugs.includes(slug);
+        {restaurants.map((r) => {
+          const voters = tally.get(r.slug) ?? [];
+          const picked = !!me && votes[me] === r.slug;
+          const isLeader = leaderCount > 0 && leaderSlugs.has(r.slug);
           return (
             <RestaurantCard
               key={r.name}
               restaurant={r}
-              slug={slug}
               voters={voters}
               picked={picked}
               isLeader={isLeader}
-              isTie={isLeader && leaderSlugs.length > 1}
+              isTie={isLeader && isTie}
               me={me}
               canVote={!!me}
-              onToggle={() => onToggle(slug)}
+              onToggle={() => onToggle(r.slug)}
             />
           );
         })}

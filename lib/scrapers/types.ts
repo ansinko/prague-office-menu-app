@@ -5,6 +5,7 @@ export interface MenuItem {
 
 export interface Restaurant {
   name: string;
+  slug: string;
   url: string;
   soup: string | null;
   extra: string | null;

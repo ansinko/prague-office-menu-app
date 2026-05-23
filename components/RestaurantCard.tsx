@@ -14,7 +14,6 @@ function ArrowUpRight() {
 
 export function RestaurantCard({
   restaurant: r,
-  slug,
   voters,
   picked,
   isLeader,
@@ -24,7 +23,6 @@ export function RestaurantCard({
   onToggle,
 }: {
   restaurant: Restaurant;
-  slug: string;
   voters: string[];
   picked: boolean;
   isLeader: boolean;
@@ -109,7 +107,7 @@ export function RestaurantCard({
             </span>
             <VoterStack names={voters} me={me} />
           </div>
-          <PickButton slug={slug} picked={picked} disabled={!canVote} onToggle={onToggle} />
+          <PickButton slug={r.slug} picked={picked} disabled={!canVote} onToggle={onToggle} />
         </div>
       )}
     </article>

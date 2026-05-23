@@ -1,4 +1,5 @@
 import { isPragueWeekend } from '../prague-time';
+import { slugify } from '../slug';
 import type { ParseResult, Restaurant } from './types';
 
 export async function fetchText(url: string, init?: RequestInit): Promise<string> {
@@ -14,7 +15,7 @@ export async function runScraper(opts: {
   parse: (html: string) => ParseResult;
 }): Promise<Restaurant> {
   const base: Restaurant = {
-    name: opts.name, url: opts.url,
+    name: opts.name, slug: slugify(opts.name), url: opts.url,
     soup: null, extra: null, items: [], error: null,
   };
 

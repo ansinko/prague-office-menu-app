@@ -1,5 +1,6 @@
 import type { Restaurant } from './scrapers/types';
 import { getOffice } from './offices';
+import { slugify } from './slug';
 
 const BLOB_BASE =
   'https://k4iu9zkxljm5kpot.public.blob.vercel-storage.com';
@@ -15,14 +16,15 @@ function mainMenuUrl(): string {
 }
 const USOTONU_URL = `${BLOB_BASE}/usotonu.json`;
 
-const USOTONU_FALLBACK: Restaurant = {
-  name: 'U Sotonů',
-  url: 'https://www.facebook.com/usotonu',
-  soup: null,
-  extra: null,
-  items: [],
-  error: 'Menu nebylo nahráno',
-};
+function emptyRestaurant(name: string, url: string, error: string | null): Restaurant {
+  return { name, slug: slugify(name), url, soup: null, extra: null, items: [], error };
+}
+
+const USOTONU_FALLBACK = emptyRestaurant(
+  'U Sotonů',
+  'https://www.facebook.com/usotonu',
+  'Menu nebylo nahráno',
+);
 
 async function getAllMenus(): Promise<Restaurant[]> {
   const [mainResult, usotonuResult] = await Promise.allSettled([
@@ -38,11 +40,11 @@ async function getAllMenus(): Promise<Restaurant[]> {
 
   const mainRestaurants =
     mainResult.status === 'fulfilled'
-      ? mainResult.value.restaurants
+      ? mainResult.value.restaurants.map((r) => ({ ...r, slug: r.slug ?? slugify(r.name) }))
       : [
-          { name: 'Krušovická Chalupa', url: 'https://krusovickachalupa.cz/menu/', soup: null, extra: null, items: [], error: 'Menu se nepodařilo načíst' },
-          { name: 'Restaurant Kandelábr', url: 'https://www.restaurantkandelabr.cz/poledni-menu/', soup: null, extra: null, items: [], error: 'Menu se nepodařilo načíst' },
-          { name: 'U Smrtáka', url: 'https://usmrtaka.cz/jidelni-listek/', soup: null, extra: null, items: [], error: 'Menu se nepodařilo načíst' },
+          emptyRestaurant('Krušovická Chalupa', 'https://krusovickachalupa.cz/menu/', 'Menu se nepodařilo načíst'),
+          emptyRestaurant('Restaurant Kandelábr', 'https://www.restaurantkandelabr.cz/poledni-menu/', 'Menu se nepodařilo načíst'),
+          emptyRestaurant('U Smrtáka', 'https://usmrtaka.cz/jidelni-listek/', 'Menu se nepodařilo načíst'),
         ];
 
   const usotonu: Restaurant =

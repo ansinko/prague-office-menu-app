@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { MAX_NAME_LEN, normalizeIdentityName } from '@/lib/identity';
 
 export function IdentityBar({
   me,
@@ -14,9 +15,9 @@ export function IdentityBar({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const t = draft.trim();
-    if (!t) return;
-    onSet(t.slice(0, 24));
+    const name = normalizeIdentityName(draft);
+    if (!name) return;
+    onSet(name);
     setDraft('');
     setEditing(false);
   };
@@ -28,7 +29,7 @@ export function IdentityBar({
         <input
           className="identity-input"
           autoFocus
-          maxLength={24}
+          maxLength={MAX_NAME_LEN}
           placeholder="enter name…"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

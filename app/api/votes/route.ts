@@ -3,6 +3,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { redis, todayKey } from '@/lib/redis';
 import { secondsUntilPragueMidnight } from '@/lib/prague-time';
 import { slugify } from '@/lib/slug';
+import { normalizeIdentityName } from '@/lib/identity';
 import { getOffice } from '@/lib/offices';
 
 export const dynamic = 'force-dynamic';
@@ -17,13 +18,6 @@ function clientIp(req: NextRequest): string {
   const xf = req.headers.get('x-forwarded-for');
   if (xf) return xf.split(',')[0].trim();
   return req.headers.get('x-real-ip') ?? 'unknown';
-}
-
-function normaliseName(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const t = raw.trim();
-  if (t.length < 1 || t.length > 24) return null;
-  return t;
 }
 
 export async function GET(req: NextRequest) {
@@ -57,7 +51,7 @@ export async function POST(req: NextRequest) {
   const office = typeof parsed.officeId === 'string' ? getOffice(parsed.officeId) : undefined;
   if (!office) return NextResponse.json({ error: 'Unknown office' }, { status: 400 });
 
-  const name = normaliseName(parsed.name);
+  const name = normalizeIdentityName(parsed.name);
   if (!name) return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
 
   const restaurantRaw = parsed.restaurant;

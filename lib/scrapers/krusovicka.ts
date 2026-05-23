@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { isPragueWeekend, pragueDayIndex } from '../prague-time';
 import type { MenuItem, ParseResult, Restaurant } from './types';
 
 const NAME = 'Krušovická Chalupa';
@@ -52,11 +53,11 @@ export function parseKrusovicka(html: string, dayIndex: number): ParseResult & {
 
 export async function scrapeKrusovicka(): Promise<Restaurant> {
   const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
-  const dayIndex = new Date().getDay();
 
-  if (dayIndex === 0 || dayIndex === 6) {
+  if (isPragueWeekend()) {
     return { ...result, error: 'Víkend – polední menu nedostupné' };
   }
+  const dayIndex = pragueDayIndex();
 
   try {
     const res = await fetch(URL, { cache: 'no-store' });

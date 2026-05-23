@@ -1,3 +1,4 @@
+import { isPragueWeekend } from '../prague-time';
 import type { MenuItem, ParseResult, Restaurant } from './types';
 
 const NAME = 'Restaurant Kandelábr';
@@ -59,9 +60,8 @@ async function findEntityId(): Promise<string> {
 
 export async function scrapeKandelabr(): Promise<Restaurant> {
   const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
-  const day = new Date().getDay();
 
-  if (day === 0 || day === 6) {
+  if (isPragueWeekend()) {
     return { ...result, error: 'Víkend – polední menu nedostupné' };
   }
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { scrapeKrusovicka } from '@/lib/scrapers/krusovicka';
 import { scrapeKandelabr } from '@/lib/scrapers/kandelabr';
 import { scrapeUsmrtaka } from '@/lib/scrapers/usmrtaka';
+import { pragueIsoDate } from '@/lib/prague-time';
 
 export const maxDuration = 60;
 
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(new Date());
+  const date = pragueIsoDate();
   const restaurants = await Promise.all([
     scrapeKrusovicka(),
     scrapeKandelabr(),

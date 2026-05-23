@@ -3,32 +3,12 @@ import Link from 'next/link';
 import { getMenus } from '@/lib/menu';
 import { getOffice } from '@/lib/offices';
 import { isOfficeUnlocked, lockOffice } from '@/lib/auth';
+import { isPragueWeekend, pragueHour, pragueIsoDate, pragueLongDate } from '@/lib/prague-time';
 import { VotingApp } from '@/components/VotingApp';
 import { MatrixRain } from '@/components/MatrixRain';
 import { MatrixFooter } from '@/components/MatrixFooter';
 
 export const dynamic = 'force-dynamic';
-
-function pragueDate(d: Date) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('cs-CZ', {
-      timeZone: 'Europe/Prague',
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    }).formatToParts(d).map(p => [p.type, p.value])
-  );
-  return `${parts.weekday} ${parts.day}. ${parts.month} ${parts.year}`;
-}
-function pragueIsoDate(d: Date) {
-  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(d);
-}
-function pragueHour(d: Date) {
-  const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', hour: 'numeric', hour12: false });
-  return Number(fmt.formatToParts(d).find(p => p.type === 'hour')?.value ?? 0);
-}
-function isPragueWeekend(d: Date): boolean {
-  const wd = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Prague', weekday: 'short' }).format(d);
-  return wd === 'Sat' || wd === 'Sun';
-}
 
 export default async function OfficePage({
   params,
@@ -41,7 +21,7 @@ export default async function OfficePage({
   if (!(await isOfficeUnlocked(office.id))) redirect('/');
 
   const now = new Date();
-  const date = pragueDate(now);
+  const date = pragueLongDate(now);
   const iso = pragueIsoDate(now);
   // MENU_DATE_OVERRIDE (dev-only opt-in via .env.local) implies we're previewing
   // a specific day's menu, so bypass both the weekend and 09:00 gates.

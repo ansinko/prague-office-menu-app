@@ -9,5 +9,3 @@ export const redis = new Redis({
 export function todayKey(officeId: string): string {
   return `votes:${officeId}:${pragueIsoDate()}`;
 }
-
-export { secondsUntilPragueMidnight } from './prague-time';

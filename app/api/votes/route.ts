@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
-import { redis, secondsUntilPragueMidnight, todayKey } from '@/lib/redis';
+import { redis, todayKey } from '@/lib/redis';
+import { secondsUntilPragueMidnight } from '@/lib/prague-time';
 import { slugify } from '@/lib/slug';
 import { getOffice } from '@/lib/offices';
 

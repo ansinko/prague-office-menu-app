@@ -1,9 +1,11 @@
 import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { scrapeKrusovicka } from '@/lib/scrapers/krusovicka';
 import { scrapeKandelabr } from '@/lib/scrapers/kandelabr';
 import { scrapeUsmrtaka } from '@/lib/scrapers/usmrtaka';
 import { pragueIsoDate } from '@/lib/prague-time';
+import { MENU_CACHE_TAG } from '@/lib/menu';
 
 export const maxDuration = 60;
 
@@ -32,6 +34,8 @@ export async function GET(req: NextRequest) {
       }),
     ),
   );
+
+  revalidateTag(MENU_CACHE_TAG, 'max');
 
   return NextResponse.json({ ok: true, date, count: restaurants.length });
 }

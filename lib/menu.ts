@@ -2,6 +2,8 @@ import type { Restaurant } from './scrapers/types';
 import { getOffice } from './offices';
 import { slugify } from './slug';
 
+export const MENU_CACHE_TAG = 'menu';
+
 const BLOB_BASE =
   'https://k4iu9zkxljm5kpot.public.blob.vercel-storage.com';
 
@@ -27,12 +29,13 @@ const USOTONU_FALLBACK = emptyRestaurant(
 );
 
 async function getAllMenus(): Promise<Restaurant[]> {
+  const fetchOpts: RequestInit = { next: { revalidate: 300, tags: [MENU_CACHE_TAG] } };
   const [mainResult, usotonuResult] = await Promise.allSettled([
-    fetch(mainMenuUrl(), { cache: 'no-store' }).then((r) => {
+    fetch(mainMenuUrl(), fetchOpts).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json() as Promise<{ restaurants: Restaurant[] }>;
     }),
-    fetch(USOTONU_URL, { cache: 'no-store' }).then((r) => {
+    fetch(USOTONU_URL, fetchOpts).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json() as Promise<{ soup: string | null; extra: string | null; items: Restaurant['items'] }>;
     }),

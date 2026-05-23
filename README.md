@@ -1,28 +1,46 @@
 # Menu Picker
 
-Stránka s dnešným poludným menu z troch reštaurácií v okolí: Krušovická Chalupa, Restaurant Kandelábr a U Smrtáka. Menu sa scrapuje raz denne cez GitHub Action a ukladá do Vercel Blobu; Next.js appka číta JSON a renderuje ho.
+Stránka s dnešným poludným menu z reštaurácií v okolí office-u. Užívatelia hlasujú za výber, výsledok sa zdieľa cez Redis. Podpora viacerých office-ov, každý zamknutý vlastným heslom.
 
 🌐 https://menu-picker-three.vercel.app
+
+Aktuálne office-y a ich reštaurácie sú v [`lib/offices.ts`](lib/offices.ts):
+- **innovis (Mocha)** — Krušovická Chalupa, Restaurant Kandelábr, U Smrtáka, U Sotonů
+- **Viagem (Karlín)** — Jídlovice Karlín, Dvorek, Cafe Frida
 
 ## Architektúra
 
 ```
-GitHub Action (cron 10:30 Po-Pia)
-  → npm run scrape
-  → scrapne 3 weby
-  → uloží menu/latest.json + menu/YYYY-MM-DD.json do Vercel Blobu
+Vercel cron (06:55 UTC, Po-Pia)
+  → GET /api/scrape (Bearer CRON_SECRET)
+  → scrape 3 webov paralelne
+  → put → menu/latest.json + menu/YYYY-MM-DD.json (Vercel Blob)
+  → revalidateTag('menu', 'max')
+
+GitHub Action (07:00 UTC, Po-Pia) — záložný cron
+  → npm run scrape (rovnaký výstup do Blobu, bez revalidate tagu)
 
 Next.js app
-  → fetchuje menu/latest.json (public URL)
-  → renderuje (revalidate 5 min)
+  → GET / → mapa office-ov (klikni → zadaj heslo)
+  → GET /office/[id] → SSR cez getMenus()
+       fetch blobu s next.tags=['menu'], revalidate 300s
+  → voting cez /api/votes (Upstash Redis, polling 10s)
 ```
+
+Prague čas, dátum a víkend gate sú v jednom helperi: [`lib/prague-time.ts`](lib/prague-time.ts). Scrapery sú tenké okolo [`runScraper`](lib/scrapers/run.ts) — exportujú parsovaciu funkciu + config.
 
 ## Lokálny vývoj
 
 ```bash
 npm install
-vercel env pull .env.local --yes   # stiahne BLOB_READ_WRITE_TOKEN
+vercel env pull .env.local --yes   # BLOB_READ_WRITE_TOKEN, KV_REST_*, AUTH_SECRET, CRON_SECRET
 npm run dev                         # http://localhost:3000
+```
+
+Pre náhľad konkrétneho dňa mimo scrape hodín:
+```bash
+# .env.local
+MENU_DATE_OVERRIDE=2025-05-23
 ```
 
 ## Scripty
@@ -31,38 +49,58 @@ npm run dev                         # http://localhost:3000
 | --- | --- |
 | `npm run dev` | Dev server |
 | `npm run build` | Produkčný build |
-| `npm run scrape` | Spustí scraping a uploadne JSON do Blobu |
-| `npm test` | Vitest run |
+| `npm run scrape` | Spustí scraping a uploadne JSON do Blobu (cez `scripts/scrape.ts`) |
+| `npm test` | Vitest |
+| `npm run lint` | ESLint |
 
 ## Manuálne spustenie scrape-u
 
-**Lokálne** (prepíše Blob okamžite):
+**Lokálne** (prepíše Blob, ale neinvaliduje Next cache):
 ```bash
 npm run scrape
 ```
 
-**Cez GitHub Action** (beží z GitHub IP, simuluje reálny cron):
+**Cez `/api/scrape` na Verceli** (rovnaké ako prod cron — aj invaliduje cache tag):
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://menu-picker-three.vercel.app/api/scrape
+```
+
+**Cez GitHub Action** (záloha keby Vercel cron neprešiel):
 GitHub repo → **Actions** → „Scrape menus" → **Run workflow**.
+
+## Pridanie reštaurácie do office-u
+
+1. Pridať pin do `lib/offices.ts` (`restaurants: [{ name, coords }]`).
+2. Ak ide o novú reštauráciu (nie len pin do iného office-u):
+   - Nový scraper v `lib/scrapers/*.ts` podľa vzoru (parsing fn + `runScraper` wrapper).
+   - Registrovať volanie v `app/api/scrape/route.ts` (`Promise.all`) **a** v `scripts/scrape.ts`.
+   - Pridať fallback do `lib/menu.ts` (`emptyRestaurant(...)`).
+3. `name` v `OFFICES` musí presne zodpovedať `name` ktorý vracia scraper — `getMenus` matchuje stringom.
+
+## Pridanie office-u
+
+Stačí entry v `OFFICES` v `lib/offices.ts` — `id`, `name`, `coords`, `passwordHash`, zoznam reštaurácií. Hash hesla:
+```bash
+node -e "console.log(require('crypto').createHmac('sha256', process.env.AUTH_SECRET).update('HESLO').digest('hex'))"
+```
 
 ## Troubleshooting
 
 **Stránka ukazuje staré menu**
-Appka kešuje JSON 5 min (`revalidate = 300` v `app/page.tsx`). Počkaj alebo cache-bust: `?cb=<timestamp>`.
+Next kešuje menu blob 300s s tagom `menu`. Cron route po uspešnom scrape invaliduje tag. Ak si scrape pustil cez `npm run scrape` (lokálne / GitHub Action), tag sa neinvaliduje — počkaj 5 min alebo zavolaj `/api/scrape`.
 
 **Reštaurácia má „fetch failed" / „HTTP 4xx"**
-Scrape pre konkrétnu reštauráciu zlyhal — pravdepodobne dočasný problém na ich strane alebo blokácia IP. Skús znova `npm run scrape`. Ak to zlyháva opakovane, pozri logy v Actions tabe a uprav príslušný scraper v `lib/scrapers/`.
+Scrape jednej reštaurácie zlyhal — dočasný problém / blok. Skús znova. Ak opakovane, pozri logy a uprav scraper.
 
 **`Vercel Blob: No blob credentials found`**
-`.env.local` nemá `BLOB_READ_WRITE_TOKEN`. Spusti `vercel env pull .env.local --yes`. Ak je hodnota prázdna, na Verceli chýba premenná v *Development* env — pridaj cez dashboard alebo `vercel env add BLOB_READ_WRITE_TOKEN development`.
+`.env.local` nemá `BLOB_READ_WRITE_TOKEN`. Spusti `vercel env pull .env.local --yes`.
+
+**`AUTH_SECRET is not set` po unlocku**
+Chýba `AUTH_SECRET` v env (používa sa na podpis cookie a hash hesla).
 
 **Cron na GitHube nepustil scrape**
-GitHub Actions cron beží v UTC a v repách s nízkou aktivitou ho GitHub niekedy oneskorí o pár minút (občas aj viac). Workflow vždy vieš spustiť manuálne (Actions → Run workflow).
-
-**Pridanie novej reštaurácie**
-1. Nový súbor v `lib/scrapers/` podľa vzoru existujúcich.
-2. Pridať volanie do `Promise.all(...)` v `scripts/scrape.ts`.
-3. Nasadiť + spustiť scrape.
+GitHub cron beží v UTC a pri nízkej aktivite ho GitHub občas oneskorí. Vercel cron je primárny, GitHub je záloha. Workflow vždy vieš spustiť manuálne.
 
 ## Stack
 
-Next.js 16 (App Router), React 19, Tailwind 4, Vercel Blob, GitHub Actions, TypeScript, Vitest.
+Next.js 16 (App Router, Cache Components fetch tags), React 19, TypeScript, Tailwind 4, Vercel Blob, Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`), Leaflet (mapa), jose (HS256 JWT v cookie), GitHub Actions + Vercel cron, Vitest.

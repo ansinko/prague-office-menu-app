@@ -16,7 +16,7 @@ export function VotingApp({
   officeId: string;
 }) {
   const { me, setMe, ready } = useIdentity();
-  const { votes, cast } = useVotes(officeId);
+  const { votes, cast, renameVoter } = useVotes(officeId);
 
   const tally = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -51,14 +51,12 @@ export function VotingApp({
   };
 
   const handleSetMe = async (next: string | null) => {
-    const previousVote = me ? votes[me] : undefined;
-    if (me && previousVote) {
+    if (me && next && me !== next && votes[me]) {
+      await renameVoter(me, next);
+    } else if (me && !next && votes[me]) {
       await cast(me, null);
     }
     setMe(next);
-    if (next && previousVote) {
-      await cast(next, previousVote);
-    }
   };
 
   const isTie = leaderSlugs.size > 1;

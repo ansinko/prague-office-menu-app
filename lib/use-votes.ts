@@ -6,11 +6,20 @@ export type VoteMap = Record<string, string>;
 
 const POLL_MS = 10_000;
 
+function shallowEqual(a: VoteMap, b: VoteMap): boolean {
+  const ak = Object.keys(a);
+  if (ak.length !== Object.keys(b).length) return false;
+  for (const k of ak) if (a[k] !== b[k]) return false;
+  return true;
+}
+
 export function useVotes(officeId: string) {
   const [votes, setVotes] = useState<VoteMap>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const applyServerVotes = useCallback((next: VoteMap) => {
+    setVotes((prev) => (shallowEqual(prev, next) ? prev : next));
+  }, []);
 
   const fetchVotes = useCallback(async () => {
     abortRef.current?.abort();
@@ -23,15 +32,11 @@ export function useVotes(officeId: string) {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { votes: next } = (await res.json()) as { votes: VoteMap };
-      setVotes(next);
-      setError(null);
+      applyServerVotes(next);
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
     }
-  }, [officeId]);
+  }, [officeId, applyServerVotes]);
 
   useEffect(() => {
     fetchVotes();
@@ -67,11 +72,14 @@ export function useVotes(officeId: string) {
 
   const cast = useCallback(
     async (name: string, restaurant: string | null) => {
-      const prev = votes;
-      const next = { ...prev };
-      if (restaurant === null) delete next[name];
-      else next[name] = restaurant;
-      setVotes(next);
+      let snapshot: VoteMap = {};
+      setVotes((current) => {
+        snapshot = current;
+        const next = { ...current };
+        if (restaurant === null) delete next[name];
+        else next[name] = restaurant;
+        return next;
+      });
       try {
         const res = await fetch('/api/votes', {
           method: 'POST',
@@ -80,15 +88,42 @@ export function useVotes(officeId: string) {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { votes: server } = (await res.json()) as { votes: VoteMap };
-        setVotes(server);
-        setError(null);
-      } catch (e) {
-        setVotes(prev);
-        setError((e as Error).message);
+        applyServerVotes(server);
+      } catch {
+        setVotes(snapshot);
       }
     },
-    [votes, officeId],
+    [officeId, applyServerVotes],
   );
 
-  return { votes, cast, loading, error, refresh: fetchVotes };
+  const renameVoter = useCallback(
+    async (from: string, to: string) => {
+      if (from === to) return;
+      let snapshot: VoteMap = {};
+      setVotes((current) => {
+        snapshot = current;
+        const value = current[from];
+        if (value === undefined) return current;
+        const next = { ...current };
+        delete next[from];
+        next[to] = value;
+        return next;
+      });
+      try {
+        const res = await fetch('/api/votes', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ officeId, rename: { from, to } }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { votes: server } = (await res.json()) as { votes: VoteMap };
+        applyServerVotes(server);
+      } catch {
+        setVotes(snapshot);
+      }
+    },
+    [officeId, applyServerVotes],
+  );
+
+  return { votes, cast, renameVoter, refresh: fetchVotes };
 }

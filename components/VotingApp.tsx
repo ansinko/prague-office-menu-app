@@ -9,9 +9,15 @@ import { IdentityBar } from './IdentityBar';
 import { PickBanner } from './PickBanner';
 import { RestaurantCard } from './RestaurantCard';
 
-export function VotingApp({ restaurants }: { restaurants: Restaurant[] }) {
+export function VotingApp({
+  restaurants,
+  officeId,
+}: {
+  restaurants: Restaurant[];
+  officeId: string;
+}) {
   const { me, setMe, ready } = useIdentity();
-  const { votes, cast } = useVotes();
+  const { votes, cast } = useVotes(officeId);
 
   const tally = useMemo(() => {
     const m = new Map<string, string[]>();

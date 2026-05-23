@@ -23,7 +23,7 @@ export function MatrixRain() {
       canvas.height = h * dpr;
       canvas.style.width = w + 'px';
       canvas.style.height = h + 'px';
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.font = `${fontSize}px "Geist Mono", ui-monospace, monospace`;
       cols = Math.ceil(w / fontSize);
       drops = Array.from({ length: cols }, () => Math.random() * -50);

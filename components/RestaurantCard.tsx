@@ -93,7 +93,7 @@ export function RestaurantCard({
           ))}
         </div>
       ) : (
-        <p style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '12px 0' }}>
+        <p className="dish-empty">
           {r.error ?? 'ŽÁDNÉ POLOŽKY'}
         </p>
       )}

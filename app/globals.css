@@ -1098,3 +1098,20 @@ html, body {
   color: var(--muted);
   font-size: 13px;
 }
+
+.menu-pending {
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 48px 0;
+  letter-spacing: 0.08em;
+}
+
+.dish-empty {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 0;
+}
+

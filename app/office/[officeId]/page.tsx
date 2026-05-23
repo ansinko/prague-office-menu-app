@@ -66,7 +66,7 @@ export default async function OfficePage({
         {menuReady ? (
           <VotingApp restaurants={restaurants} officeId={office.id} />
         ) : (
-          <p style={{ textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 14, padding: '48px 0', letterSpacing: '0.08em' }}>
+          <p className="menu-pending">
             &gt; {weekend ? 'VÍKEND – MENU AŽ V PONDĚLÍ' : 'MENU SE ZOBRAZÍ OD 09:00'} _
           </p>
         )}

@@ -25,6 +25,10 @@ function pragueHour(d: Date) {
   const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', hour: 'numeric', hour12: false });
   return Number(fmt.formatToParts(d).find(p => p.type === 'hour')?.value ?? 0);
 }
+function isPragueWeekend(d: Date): boolean {
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Prague', weekday: 'short' }).format(d);
+  return wd === 'Sat' || wd === 'Sun';
+}
 
 export default async function OfficePage({
   params,
@@ -40,8 +44,10 @@ export default async function OfficePage({
   const date = pragueDate(now);
   const iso = pragueIsoDate(now);
   // MENU_DATE_OVERRIDE (dev-only opt-in via .env.local) implies we're previewing
-  // a specific day's menu, so bypass the 09:00 gate as well.
-  const menuReady = !!process.env.MENU_DATE_OVERRIDE || pragueHour(now) >= 9;
+  // a specific day's menu, so bypass both the weekend and 09:00 gates.
+  const overridden = !!process.env.MENU_DATE_OVERRIDE;
+  const weekend = isPragueWeekend(now);
+  const menuReady = overridden || (!weekend && pragueHour(now) >= 9);
 
   const restaurants = menuReady ? await getMenus(office.id) : [];
 
@@ -81,7 +87,7 @@ export default async function OfficePage({
           <VotingApp restaurants={restaurants} officeId={office.id} />
         ) : (
           <p style={{ textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 14, padding: '48px 0', letterSpacing: '0.08em' }}>
-            &gt; MENU SE ZOBRAZÍ OD 09:00 _
+            &gt; {weekend ? 'VÍKEND – MENU AŽ V PONDĚLÍ' : 'MENU SE ZOBRAZÍ OD 09:00'} _
           </p>
         )}
 

@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { isPragueWeekend } from '../prague-time';
+import { fetchText, runScraper } from './run';
 import type { MenuItem, ParseResult, Restaurant } from './types';
 
 const NAME = 'U Smrtáka';
@@ -67,19 +67,11 @@ export function parseUsmrtaka(html: string): ParseResult {
   return { soup: soups.length > 0 ? soups.join(' / ') : null, items };
 }
 
-export async function scrapeUsmrtaka(): Promise<Restaurant> {
-  const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
-
-  if (isPragueWeekend()) {
-    return { ...result, error: 'Víkend – polední menu nedostupné' };
-  }
-
-  try {
-    const res = await fetch(URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { soup, items } = parseUsmrtaka(await res.text());
-    return { ...result, soup, items };
-  } catch (e) {
-    return { ...result, error: e instanceof Error ? e.message : 'Chyba scrapeingu' };
-  }
+export function scrapeUsmrtaka(): Promise<Restaurant> {
+  return runScraper({
+    name: NAME,
+    url: URL,
+    fetch: () => fetchText(URL),
+    parse: parseUsmrtaka,
+  });
 }

@@ -1,4 +1,4 @@
-import { isPragueWeekend } from '../prague-time';
+import { fetchText, runScraper } from './run';
 import type { MenuItem, ParseResult, Restaurant } from './types';
 
 const NAME = 'Restaurant Kandelábr';
@@ -49,8 +49,7 @@ export function parseZomato(html: string): ParseResult {
 
 async function findEntityId(): Promise<string> {
   try {
-    const res = await fetch(URL, { cache: 'no-store', headers: { 'User-Agent': UA } });
-    const html = await res.text();
+    const html = await fetchText(URL, { headers: { 'User-Agent': UA } });
     return html.match(/iframe[^>]*src="[^"]*zomato\.com[^"]*entity_id=(\d+)/)?.[1]
       ?? ENTITY_ID_FALLBACK;
   } catch {
@@ -58,23 +57,17 @@ async function findEntityId(): Promise<string> {
   }
 }
 
-export async function scrapeKandelabr(): Promise<Restaurant> {
-  const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
-
-  if (isPragueWeekend()) {
-    return { ...result, error: 'Víkend – polední menu nedostupné' };
-  }
-
-  try {
-    const entityId = await findEntityId();
-    const res = await fetch(
-      `https://www.zomato.com/cs/widgets/daily_menu.php?entity_id=${entityId}`,
-      { headers: { Referer: URL, 'User-Agent': UA }, cache: 'no-store' },
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { soup, items } = parseZomato(await res.text());
-    return { ...result, soup, items };
-  } catch (e) {
-    return { ...result, error: e instanceof Error ? e.message : 'Chyba scrapeingu' };
-  }
+export function scrapeKandelabr(): Promise<Restaurant> {
+  return runScraper({
+    name: NAME,
+    url: URL,
+    fetch: async () => {
+      const entityId = await findEntityId();
+      return fetchText(
+        `https://www.zomato.com/cs/widgets/daily_menu.php?entity_id=${entityId}`,
+        { headers: { Referer: URL, 'User-Agent': UA } },
+      );
+    },
+    parse: parseZomato,
+  });
 }

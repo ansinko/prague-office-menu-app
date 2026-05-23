@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
-import { isPragueWeekend, pragueDayIndex } from '../prague-time';
+import { pragueDayIndex } from '../prague-time';
+import { fetchText, runScraper } from './run';
 import type { MenuItem, ParseResult, Restaurant } from './types';
 
 const NAME = 'Krušovická Chalupa';
@@ -51,20 +52,15 @@ export function parseKrusovicka(html: string, dayIndex: number): ParseResult & {
   return { soup, extra, items, error: null };
 }
 
-export async function scrapeKrusovicka(): Promise<Restaurant> {
-  const result: Restaurant = { name: NAME, url: URL, soup: null, extra: null, items: [], error: null };
-
-  if (isPragueWeekend()) {
-    return { ...result, error: 'Víkend – polední menu nedostupné' };
-  }
-  const dayIndex = pragueDayIndex();
-
-  try {
-    const res = await fetch(URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { soup, extra, items, error } = parseKrusovicka(await res.text(), dayIndex);
-    return { ...result, soup, extra: extra ?? null, items, error };
-  } catch (e) {
-    return { ...result, error: e instanceof Error ? e.message : 'Chyba scrapeingu' };
-  }
+export function scrapeKrusovicka(): Promise<Restaurant> {
+  return runScraper({
+    name: NAME,
+    url: URL,
+    fetch: () => fetchText(URL),
+    parse: (html) => {
+      const r = parseKrusovicka(html, pragueDayIndex());
+      if (r.error) throw new Error(r.error);
+      return r;
+    },
+  });
 }

@@ -100,9 +100,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown restaurant' }, { status: 400 });
   }
 
+  const currentCsv = (await redis.hget<string>(key, name)) ?? '';
+  const current = currentCsv.split(',').filter(Boolean);
+  const next = current.includes(restaurantRaw)
+    ? current.filter((s) => s !== restaurantRaw)
+    : [...current, restaurantRaw];
+
+  if (next.length === 0) {
+    const [, data] = await redis
+      .multi()
+      .hdel(key, name)
+      .hgetall<VoteMap>(key)
+      .exec<[number, VoteMap | null]>();
+    return NextResponse.json({ votes: data ?? {} });
+  }
+
   const [, , data] = await redis
     .multi()
-    .hset(key, { [name]: restaurantRaw })
+    .hset(key, { [name]: next.join(',') })
     .expire(key, secondsUntilPragueMidnight())
     .hgetall<VoteMap>(key)
     .exec<[number, number, VoteMap | null]>();

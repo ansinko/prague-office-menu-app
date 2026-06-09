@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import type { Restaurant } from '@/lib/scrapers/types';
 import { useIdentity } from '@/lib/use-identity';
 import { useVotes } from '@/lib/use-votes';
+import { computeTally, computeWinner } from '@/lib/tally';
+import { pragueIsoDate } from '@/lib/prague-time';
 import { IdentityBar } from './IdentityBar';
 import { PickBanner } from './PickBanner';
 import { RestaurantCard } from './RestaurantCard';
@@ -18,66 +20,67 @@ export function VotingApp({
   const { me, setMe, ready } = useIdentity();
   const { votes, cast, renameVoter } = useVotes(officeId);
 
-  const tally = useMemo(() => {
-    const m = new Map<string, string[]>();
-    for (const [voter, slug] of Object.entries(votes)) {
-      const arr = m.get(slug) ?? [];
-      arr.push(voter);
-      m.set(slug, arr);
-    }
-    return m;
-  }, [votes]);
+  const tally = useMemo(() => computeTally(votes), [votes]);
 
-  const { leaderCount, leaderSlugs, leaderNames } = useMemo(() => {
-    let max = 0;
-    for (const voters of tally.values()) {
-      if (voters.length > max) max = voters.length;
-    }
-    if (max === 0) return { leaderCount: 0, leaderSlugs: new Set<string>(), leaderNames: [] as string[] };
-    const slugs = new Set<string>();
-    for (const [slug, voters] of tally.entries()) {
-      if (voters.length === max) slugs.add(slug);
-    }
-    const names = restaurants.filter((r) => slugs.has(r.slug)).map((r) => r.name);
-    return { leaderCount: max, leaderSlugs: slugs, leaderNames: names };
-  }, [tally, restaurants]);
+  const winner = useMemo(
+    () => computeWinner(tally, pragueIsoDate()),
+    [tally],
+  );
 
-  const total = Object.keys(votes).length;
+  const winnerName = useMemo(() => {
+    if (!winner.winnerSlug) return null;
+    return restaurants.find((r) => r.slug === winner.winnerSlug)?.name ?? null;
+  }, [winner.winnerSlug, restaurants]);
+
+  const tiedSlugSet = useMemo(() => new Set(winner.tiedSlugs), [winner.tiedSlugs]);
+
+  const totalVotes = useMemo(
+    () => Array.from(tally.values()).reduce((sum, voters) => sum + voters.length, 0),
+    [tally],
+  );
+  const totalVoters = Object.keys(votes).length;
+  const myPicks = me ? (votes[me] ?? []) : [];
 
   const onToggle = (slug: string) => {
     if (!me) return;
-    const current = votes[me];
-    cast(me, current === slug ? null : slug);
+    cast(me, slug);
   };
 
   const handleSetMe = async (next: string | null) => {
-    if (me && next && me !== next && votes[me]) {
+    if (me && next && me !== next && (votes[me]?.length ?? 0) > 0) {
       await renameVoter(me, next);
-    } else if (me && !next && votes[me]) {
+    } else if (me && !next && (votes[me]?.length ?? 0) > 0) {
       await cast(me, null);
     }
     setMe(next);
   };
 
-  const isTie = leaderSlugs.size > 1;
-
   return (
     <>
-      {ready && <IdentityBar me={me} onSet={handleSetMe} />}
-      <PickBanner leaders={leaderNames} count={leaderCount} total={total} />
+      {ready && <IdentityBar me={me} onSet={handleSetMe} pickCount={myPicks.length} />}
+      <PickBanner
+        winnerName={winnerName}
+        topVotes={winner.topVotes}
+        totalVotes={totalVotes}
+        totalVoters={totalVoters}
+        tiedCount={winner.tiedCount}
+      />
       <main className="grid">
         {restaurants.map((r) => {
           const voters = tally.get(r.slug) ?? [];
-          const picked = !!me && votes[me] === r.slug;
-          const isLeader = leaderCount > 0 && leaderSlugs.has(r.slug);
+          const picked = myPicks.includes(r.slug);
+          const isWinner = winner.winnerSlug === r.slug;
+          const isTied = tiedSlugSet.has(r.slug);
+          const wasRolled = isWinner && winner.tiedCount > 1;
           return (
             <RestaurantCard
               key={r.name}
               restaurant={r}
               voters={voters}
               picked={picked}
-              isLeader={isLeader}
-              isTie={isLeader && isTie}
+              isWinner={isWinner}
+              isTied={isTied && !isWinner}
+              wasRolled={wasRolled}
               me={me}
               canVote={!!me}
               onToggle={() => onToggle(r.slug)}

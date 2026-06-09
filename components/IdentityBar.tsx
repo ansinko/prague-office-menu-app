@@ -6,9 +6,11 @@ import { MAX_NAME_LEN, normalizeIdentityName } from '@/lib/identity';
 export function IdentityBar({
   me,
   onSet,
+  pickCount,
 }: {
   me: string | null;
   onSet: (name: string | null) => void;
+  pickCount: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -55,6 +57,9 @@ export function IdentityBar({
     <div className="identity-bar">
       <span className="identity-label">$ whoami</span>
       <span className="identity-name">{me}</span>
+      {pickCount > 0 && (
+        <span className="identity-picks">[ {pickCount} pick{pickCount === 1 ? '' : 's'} ]</span>
+      )}
       <button
         type="button"
         className="identity-btn"

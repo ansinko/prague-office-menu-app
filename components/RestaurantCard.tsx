@@ -16,8 +16,9 @@ export function RestaurantCard({
   restaurant: r,
   voters,
   picked,
-  isLeader,
-  isTie,
+  isWinner,
+  isTied,
+  wasRolled,
   me,
   canVote,
   onToggle,
@@ -25,8 +26,9 @@ export function RestaurantCard({
   restaurant: Restaurant;
   voters: string[];
   picked: boolean;
-  isLeader: boolean;
-  isTie: boolean;
+  isWinner: boolean;
+  isTied: boolean;
+  wasRolled: boolean;
   me: string | null;
   canVote: boolean;
   onToggle: () => void;
@@ -35,7 +37,9 @@ export function RestaurantCard({
   const classes = ['card'];
   if (isError) classes.push('card--error');
   if (picked) classes.push('card--picked');
-  if (isLeader) classes.push('card--leader');
+  if (isWinner) classes.push('card--winner');
+  if (wasRolled) classes.push('card--rolled');
+  if (isTied) classes.push('card--tied');
 
   const count = voters.length;
   const label = count === 0 ? 'VOTES' : count === 1 ? 'HLAS' : count < 5 ? 'HLASY' : 'HLASŮ';
@@ -47,8 +51,13 @@ export function RestaurantCard({
       <span className="card-corner card-corner--bl" aria-hidden="true" />
       <span className="card-corner card-corner--br" aria-hidden="true" />
 
-      {isLeader && (
-        <span className="card-pick-badge">{isTie ? '[ TIE ]' : '[ WINNER ]'}</span>
+      {isWinner && (
+        <span className="card-pick-badge">
+          {wasRolled ? '[ WINNER × ROLL ]' : '[ WINNER ]'}
+        </span>
+      )}
+      {isTied && (
+        <span className="card-pick-badge card-pick-badge--tied">[ TIED ]</span>
       )}
 
       <div className="card-head-row">

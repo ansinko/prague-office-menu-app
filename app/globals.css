@@ -446,6 +446,14 @@ html, body {
 .pick-banner-label { color: var(--muted); }
 .pick-banner-names { color: var(--accent); font-weight: 700; text-shadow: 0 0 6px rgba(0, 255, 102, 0.55); }
 .pick-banner-count { color: var(--accent); font-variant-numeric: tabular-nums; }
+.pick-banner-roll { color: var(--muted); opacity: 0.8; letter-spacing: 0.04em; }
+.pick-banner-clicks { color: var(--muted); opacity: 0.7; }
+.identity-picks {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-left: 6px;
+}
 @keyframes pick-banner-in {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -537,9 +545,16 @@ html, body {
   border-color: rgba(0, 255, 102, 0.6);
   box-shadow: inset 0 0 24px rgba(0, 255, 102, 0.07), 0 0 12px rgba(0, 255, 102, 0.18);
 }
-.card--leader {
+.card--winner {
   border-color: var(--accent);
   box-shadow: inset 0 0 24px rgba(0, 255, 102, 0.1), 0 0 24px rgba(0, 255, 102, 0.28);
+}
+.card--tied {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.card--rolled .card-pick-badge {
+  letter-spacing: 0.04em;
 }
 .card-pick-badge {
   position: absolute;
@@ -554,6 +569,11 @@ html, body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   text-shadow: 0 0 6px rgba(0, 255, 102, 0.6);
+}
+.card-pick-badge--tied {
+  border-style: dashed;
+  opacity: 0.6;
+  text-shadow: none;
 }
 
 /* ─── extra (dessert / side under soup) ─── */

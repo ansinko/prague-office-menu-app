@@ -1,15 +1,21 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { parseCsvVotes, type VoteMap } from '@/lib/tally';
 
-export type VoteMap = Record<string, string>;
+export type { VoteMap };
 
 const POLL_MS = 10_000;
 
-function shallowEqual(a: VoteMap, b: VoteMap): boolean {
+function votesEqual(a: VoteMap, b: VoteMap): boolean {
   const ak = Object.keys(a);
   if (ak.length !== Object.keys(b).length) return false;
-  for (const k of ak) if (a[k] !== b[k]) return false;
+  for (const k of ak) {
+    const av = a[k];
+    const bv = b[k];
+    if (!bv || av.length !== bv.length) return false;
+    for (let i = 0; i < av.length; i++) if (av[i] !== bv[i]) return false;
+  }
   return true;
 }
 
@@ -17,8 +23,9 @@ export function useVotes(officeId: string) {
   const [votes, setVotes] = useState<VoteMap>({});
   const abortRef = useRef<AbortController | null>(null);
 
-  const applyServerVotes = useCallback((next: VoteMap) => {
-    setVotes((prev) => (shallowEqual(prev, next) ? prev : next));
+  const applyServerVotes = useCallback((raw: Record<string, string>) => {
+    const next = parseCsvVotes(raw);
+    setVotes((prev) => (votesEqual(prev, next) ? prev : next));
   }, []);
 
   const fetchVotes = useCallback(async () => {
@@ -31,7 +38,7 @@ export function useVotes(officeId: string) {
         cache: 'no-store',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const { votes: next } = (await res.json()) as { votes: VoteMap };
+      const { votes: next } = (await res.json()) as { votes: Record<string, string> };
       applyServerVotes(next);
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
@@ -76,8 +83,16 @@ export function useVotes(officeId: string) {
       setVotes((current) => {
         snapshot = current;
         const next = { ...current };
-        if (restaurant === null) delete next[name];
-        else next[name] = restaurant;
+        if (restaurant === null) {
+          delete next[name];
+        } else {
+          const list = current[name] ?? [];
+          const toggled = list.includes(restaurant)
+            ? list.filter((s) => s !== restaurant)
+            : [...list, restaurant];
+          if (toggled.length === 0) delete next[name];
+          else next[name] = toggled;
+        }
         return next;
       });
       try {
@@ -87,7 +102,7 @@ export function useVotes(officeId: string) {
           body: JSON.stringify({ name, restaurant, officeId }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { votes: server } = (await res.json()) as { votes: VoteMap };
+        const { votes: server } = (await res.json()) as { votes: Record<string, string> };
         applyServerVotes(server);
       } catch {
         setVotes(snapshot);
@@ -116,7 +131,7 @@ export function useVotes(officeId: string) {
           body: JSON.stringify({ officeId, rename: { from, to } }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { votes: server } = (await res.json()) as { votes: VoteMap };
+        const { votes: server } = (await res.json()) as { votes: Record<string, string> };
         applyServerVotes(server);
       } catch {
         setVotes(snapshot);

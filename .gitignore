@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local-only docs and design assets
+/docs
+/design
+
 # playwright-cli
 .playwright-cli/
 

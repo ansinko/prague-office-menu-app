@@ -6,7 +6,6 @@ Stránka s dnešným poludným menu z reštaurácií v okolí office-u. Užívat
 
 Aktuálne office-y a ich reštaurácie sú v [`lib/offices.ts`](lib/offices.ts):
 - **innovis (Mocha)** — Krušovická Chalupa, Restaurant Kandelábr, U Smrtáka, U Sotonů
-- **Viagem (Karlín)** — Jídlovice Karlín, Dvorek, Cafe Frida
 
 ## Architektúra
 
@@ -14,7 +13,9 @@ Aktuálne office-y a ich reštaurácie sú v [`lib/offices.ts`](lib/offices.ts):
 Vercel cron (06:55 UTC, Po-Pia)
   → GET /api/scrape (Bearer CRON_SECRET)
   → scrape 3 webov paralelne
+  → scrape U Sotonů z verejnej Facebook fotky + Gemini OCR
   → put → menu/latest.json + menu/YYYY-MM-DD.json (Vercel Blob)
+  → put → usotonu.json pri úspešnom OCR (Vercel Blob)
   → revalidateTag('menu', 'max')
 
 GitHub Action (07:00 UTC, Po-Pia) — záložný cron
@@ -28,12 +29,13 @@ Next.js app
 ```
 
 Prague čas, dátum a víkend gate sú v jednom helperi: [`lib/prague-time.ts`](lib/prague-time.ts). Scrapery sú tenké okolo [`runScraper`](lib/scrapers/run.ts) — exportujú parsovaciu funkciu + config.
+U Sotonů je špeciálny prípad: menu publikujú ako fotku na Facebooku, preto [`lib/scrapers/usotonu-facebook.ts`](lib/scrapers/usotonu-facebook.ts) hľadá verejný obrázok a cez Gemini ho prevádza na rovnaký JSON tvar. Ak Facebook alebo OCR zlyhá, `usotonu.json` sa neprepíše a appka nechá posledné dobré menu.
 
 ## Lokálny vývoj
 
 ```bash
 npm install
-vercel env pull .env.local --yes   # BLOB_READ_WRITE_TOKEN, KV_REST_*, AUTH_SECRET, CRON_SECRET
+vercel env pull .env.local --yes   # BLOB_READ_WRITE_TOKEN, KV_REST_*, AUTH_SECRET, CRON_SECRET, GEMINI_API_KEY
 npm run dev                         # http://localhost:3000
 ```
 
@@ -91,6 +93,9 @@ Next kešuje menu blob 300s s tagom `menu`. Cron route po uspešnom scrape inval
 
 **Reštaurácia má „fetch failed" / „HTTP 4xx"**
 Scrape jednej reštaurácie zlyhal — dočasný problém / blok. Skús znova. Ak opakovane, pozri logy a uprav scraper.
+
+**U Sotonů sa neaktualizovalo**
+Automatika berie poslednú verejnú Facebook fotku a posiela ju do Gemini. Ak Facebook skryje obsah, zmení HTML, vráti nerelevantný obrázok alebo chýba `GEMINI_API_KEY`, scrape vypíše chybu v `usotonu` diagnostike a neprepíše posledné dobré `usotonu.json`. Voliteľne môžeš zmeniť zdroj cez `USOTONU_FACEBOOK_URL`.
 
 **`Vercel Blob: No blob credentials found`**
 `.env.local` nemá `BLOB_READ_WRITE_TOKEN`. Spusti `vercel env pull .env.local --yes`.

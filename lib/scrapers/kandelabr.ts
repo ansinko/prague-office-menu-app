@@ -7,6 +7,22 @@ const ENTITY_ID_FALLBACK = '16506739';
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
+const BROWSER_HEADERS = {
+  'User-Agent': UA,
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'cs-CZ,cs;q=0.9,en;q=0.8',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Cache-Control': 'no-cache',
+  Pragma: 'no-cache',
+  'Sec-Ch-Ua': '"Chromium";v="120", "Not_A Brand";v="24"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"macOS"',
+  'Sec-Fetch-Dest': 'iframe',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'cross-site',
+  'Upgrade-Insecure-Requests': '1',
+};
+
 export function parseZomato(html: string): ParseResult {
   const todayMatch = html.match(
     /class="date inner-layer">[^<]*\(Dnes\)[^<]*<\/div>([\s\S]*?)(?=class="date inner-layer"|$)/,
@@ -49,7 +65,7 @@ export function parseZomato(html: string): ParseResult {
 
 async function findEntityId(): Promise<string> {
   try {
-    const html = await fetchText(URL, { headers: { 'User-Agent': UA } });
+    const html = await fetchText(URL, { headers: BROWSER_HEADERS });
     return html.match(/iframe[^>]*src="[^"]*zomato\.com[^"]*entity_id=(\d+)/)?.[1]
       ?? ENTITY_ID_FALLBACK;
   } catch {
@@ -65,7 +81,7 @@ export function scrapeKandelabr(): Promise<Restaurant> {
       const entityId = await findEntityId();
       return fetchText(
         `https://www.zomato.com/cs/widgets/daily_menu.php?entity_id=${entityId}`,
-        { headers: { Referer: URL, 'User-Agent': UA } },
+        { headers: { ...BROWSER_HEADERS, Referer: URL } },
       );
     },
     parse: parseZomato,
